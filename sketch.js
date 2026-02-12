@@ -251,10 +251,10 @@ function updateMovement() {
 
   let inputX = 0, inputY = 0;
 
-  if (keyIsDown(90)) inputY -= 1; // Z
-  if (keyIsDown(83)) inputY += 1; // S
-  if (keyIsDown(81)) inputX -= 1; // Q
-  if (keyIsDown(68)) inputX += 1; // D
+  if (keyIsDown(90) || keyIsDown(UP_ARROW)) inputY -= 1; // Z or Up Arrow
+  if (keyIsDown(83) || keyIsDown(DOWN_ARROW)) inputY += 1; // S or Down Arrow
+  if (keyIsDown(81) || keyIsDown(LEFT_ARROW)) inputX -= 1; // Q or Left Arrow
+  if (keyIsDown(68) || keyIsDown(RIGHT_ARROW)) inputX += 1; // D or Right Arrow
 
   if (touchMoveDir) {
     inputX = touchMoveDir.x;

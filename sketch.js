@@ -45,6 +45,11 @@ let sodaSprites = [];
 
 let appleSpawnedGrid = {};
 
+// Timer variables
+let timerSeconds = 30;
+let lastSecondUpdate = 0;
+let gameOver = false;
+
 let TOUCH_BTN_SIZE;
 let margin;
 
@@ -114,6 +119,11 @@ function setup() {
 
   noiseDetail(4, 0.5);
 
+  // Initialize timer
+  timerSeconds = 30;
+  lastSecondUpdate = millis();
+  gameOver = false;
+
   spawnApples(true); // initial spawn
 }
 
@@ -131,8 +141,24 @@ function windowResized() {
 function draw() {
   background(25);
 
-  updateShootLock();
-  updateMovement();
+  // Update countdown timer
+  if (!gameOver) {
+    let currentTime = millis();
+    if (currentTime - lastSecondUpdate >= 1000) {
+      timerSeconds--;
+      lastSecondUpdate = currentTime;
+      if (timerSeconds <= 0) {
+        timerSeconds = 0;
+        gameOver = true;
+      }
+    }
+  }
+
+  // Stop gameplay when game is over
+  if (!gameOver) {
+    updateShootLock();
+    updateMovement();
+  }
   updateCamera();
 
   push();
@@ -270,6 +296,14 @@ function drawEntities() {
       if (dist(player.x, player.y, e.x, e.y) < (player.size/2 + e.size/2)*0.6) {
         e.collected = true;
         collectedCount++;
+        
+        // Update timer based on item type
+        if (e.type === 'apple' || e.type === 'banana') {
+          timerSeconds += 5; // Healthy items add 5 seconds
+        } else if (e.type === 'soda') {
+          timerSeconds -= 5; // Junk food subtracts 5 seconds
+          if (timerSeconds < 0) timerSeconds = 0;
+        }
       }
     }
   }
@@ -407,4 +441,24 @@ function updateBullets(){ fill("yellow"); for(let b of bullets){ b.x+=b.vx; b.y+
 function drawUI(){
   fill(255); noStroke(); textSize(28);
   text(`Collected: ${collectedCount}`,10,30);
+  
+  // Display timer in MM:SS format
+  let minutes = floor(timerSeconds / 60);
+  let seconds = timerSeconds % 60;
+  text(`Time: ${nf(minutes, 2)}:${nf(seconds, 2)}`, 10, 65);
+  
+  // Game over screen
+  if (gameOver) {
+    fill(255, 0, 0);
+    textSize(64);
+    textAlign(CENTER, CENTER);
+    text("TIME'S UP!", width / 2, height / 2 - 50);
+    
+    fill(255);
+    textSize(32);
+    text(`Final Score: ${collectedCount}`, width / 2, height / 2 + 20);
+    text("Refresh to restart", width / 2, height / 2 + 60);
+    
+    textAlign(LEFT, BASELINE); // Reset alignment
+  }
 }

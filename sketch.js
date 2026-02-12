@@ -52,20 +52,20 @@ let margin;
 function preload() {
   const paths = {
     idle: {
-      down: "Sprites/idle/Idle_Down.png",
-      up: "Sprites/idle/Idle_Up.png",
-      left_down: "Sprites/idle/Idle_Left_Down.png",
-      right_down: "Sprites/idle/Idle_Right_Down.png",
-      left_up: "Sprites/idle/Idle_Left_Up.png",
-      right_up: "Sprites/idle/Idle_Right_Up.png"
+      down: "assets/sprites/idle/Idle_Down.png",
+      up: "assets/sprites/idle/Idle_Up.png",
+      left_down: "assets/sprites/idle/Idle_Left_Down.png",
+      right_down: "assets/sprites/idle/Idle_Right_Down.png",
+      left_up: "assets/sprites/idle/Idle_Left_Up.png",
+      right_up: "assets/sprites/idle/Idle_Right_Up.png"
     },
     walk: {
-      down: "Sprites/walk/walk_Down.png",
-      up: "Sprites/walk/walk_Up.png",
-      left_down: "Sprites/walk/walk_Left_Down.png",
-      right_down: "Sprites/walk/walk_Right_Down.png",
-      left_up: "Sprites/walk/walk_Left_Up.png",
-      right_up: "Sprites/walk/walk_Right_Up.png"
+      down: "assets/sprites/walk/walk_Down.png",
+      up: "assets/sprites/walk/walk_Up.png",
+      left_down: "assets/sprites/walk/walk_Left_Down.png",
+      right_down: "assets/sprites/walk/walk_Right_Down.png",
+      left_up: "assets/sprites/walk/walk_Left_Up.png",
+      right_up: "assets/sprites/walk/walk_Right_Up.png"
     }
   };
 
@@ -77,14 +77,14 @@ function preload() {
   }
 
   for (let i = 1; i <= 6; i++) {
-    grassTiles.push(loadImage(`floor/grass/grass0${i}.png`));
+    grassTiles.push(loadImage(`assets/floor/grass/grass0${i}.png`));
   }
 
-  appleSprite = loadImage("objects/apple/apple.png");
-  bananaSprites.push(loadImage("objects/banana/banana-1.png"));
-  bananaSprites.push(loadImage("objects/banana/banana-2.png"));
-  sodaSprites.push(loadImage("objects/soda/soda-1.png"));
-  sodaSprites.push(loadImage("objects/soda/soda-2.png"));
+  appleSprite = loadImage("assets/objects/apple/apple.png");
+  bananaSprites.push(loadImage("assets/objects/banana/banana-1.png"));
+  bananaSprites.push(loadImage("assets/objects/banana/banana-2.png"));
+  sodaSprites.push(loadImage("assets/objects/soda/soda-1.png"));
+  sodaSprites.push(loadImage("assets/objects/soda/soda-2.png"));
 }
 
 // ==========================

@@ -440,13 +440,36 @@ function updateBullets(){ fill("yellow"); for(let b of bullets){ b.x+=b.vx; b.y+
 // ==========================
 // UI
 function drawUI(){
-  fill(255); noStroke(); textSize(28);
-  text(`Collected: ${collectedCount}`,10,30);
+  noStroke();
   
-  // Display timer in MM:SS format
+  // Timer display at top center
   let minutes = floor(timerSeconds / 60);
   let seconds = timerSeconds % 60;
-  text(`Time: ${nf(minutes, 2)}:${nf(seconds, 2)}`, 10, 65);
+  let timeText = `${nf(minutes, 2)}:${nf(seconds, 2)}`;
+  
+  textAlign(CENTER, TOP);
+  
+  // Urgency effect when timer <= 15 seconds
+  if (timerSeconds <= 15 && timerSeconds > 0) {
+    // Red color for urgency
+    fill(255, 0, 0);
+    // Pulsing effect using sine wave
+    let pulse = sin(millis() * 0.005) * 8; // oscillates between -8 and +8
+    textSize(64 + pulse);
+  } else {
+    fill(255);
+    textSize(64);
+  }
+  
+  text(timeText, width / 2, 20);
+  
+  // Total score below timer
+  fill(255);
+  textSize(32);
+  text(`Score: ${collectedCount}`, width / 2, 90);
+  
+  // Reset text alignment
+  textAlign(LEFT, BASELINE);
   
   // Game over screen
   if (gameOver) {

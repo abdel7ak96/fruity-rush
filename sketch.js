@@ -179,6 +179,7 @@ function draw() {
 // ==========================
 // GRASS
 function drawGrass() {
+  noStroke();
   let startX = floor((cameraX - TILE_RENDER_MARGIN) / TILE_SIZE);
   let endX   = ceil((cameraX + width + TILE_RENDER_MARGIN) / TILE_SIZE);
   let startY = floor((cameraY - TILE_RENDER_MARGIN) / TILE_SIZE);
@@ -358,7 +359,7 @@ function getDirection(vx,vy){
   return player.lastDir;
 }
 
-function updateCamera() { cameraX = player.x - width/2; cameraY = player.y - height/2; }
+function updateCamera() { cameraX = floor(player.x - width/2); cameraY = floor(player.y - height/2); }
 
 function drawPlayer() {
   let state = (abs(player.vx)>0.1||abs(player.vy)>0.1)?"walk":"idle";

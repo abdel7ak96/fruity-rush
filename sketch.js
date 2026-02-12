@@ -16,7 +16,7 @@ const TILE_SIZE = 64;
 const TILE_RENDER_MARGIN = TILE_SIZE * 2;
 
 const ENTITY_SIZE = 48;
-const APPLE_GRID_STEP = 160; // distance between apples
+const APPLE_GRID_STEP = 240; // distance between apples
 const SPAWN_ITEMS_PER_CELL = 3; // max items per grid cell
 const CLEANUP_DISTANCE = 2000; // remove collected items beyond this distance
 

@@ -17,6 +17,8 @@ const TILE_RENDER_MARGIN = TILE_SIZE * 2;
 
 const ENTITY_SIZE = 48;
 const APPLE_GRID_STEP = 160; // distance between apples
+const SPAWN_ITEMS_PER_CELL = 3; // max items per grid cell
+const CLEANUP_DISTANCE = 2000; // remove collected items beyond this distance
 
 const TOUCH_BTN_SIZE_RATIO = 0.12; // % of smaller screen dimension
 
@@ -179,28 +181,58 @@ function spawnApples(initial=false) {
   let startY = floor((cameraY - TILE_RENDER_MARGIN) / APPLE_GRID_STEP);
   let endY   = ceil((cameraY + height + TILE_RENDER_MARGIN) / APPLE_GRID_STEP);
 
-  let inView = entities.filter(e => !e.collected &&
-    e.x > cameraX && e.x < cameraX + width &&
-    e.y > cameraY && e.y < cameraY + height
-  ).length;
-
-  if (inView >= 2 && !initial) return; // max 2 visible apples
+  // Clean up collected items far from camera to prevent memory issues
+  if (!initial) {
+    entities = entities.filter(e => {
+      if (!e.collected) return true;
+      let dist = sqrt(pow(e.x - player.x, 2) + pow(e.y - player.y, 2));
+      return dist < CLEANUP_DISTANCE;
+    });
+  }
 
   for (let i = startX; i <= endX; i++) {
     for (let j = startY; j <= endY; j++) {
       let key = i + "_" + j;
       if (appleSpawnedGrid[key]) continue;
 
-      let n = pow(noise(i*0.1, j*0.1), 2);
-      let chance = random();
-
-      if (initial || (n > 0.75 && chance > 0.995)) {
-        let offsetX = random(-APPLE_GRID_STEP/4, APPLE_GRID_STEP/4);
-        let offsetY = random(-APPLE_GRID_STEP/4, APPLE_GRID_STEP/4);
+      // Use perlin noise to create natural clustering
+      // Higher frequency for more variation
+      let noiseValue = noise(i * 0.08, j * 0.08);
+      
+      // Second layer of noise for more interesting patterns
+      let noiseValue2 = noise(i * 0.2 + 100, j * 0.2 + 100);
+      
+      // Combine noise values - creates clusters and sparse areas
+      let density = (noiseValue * 0.7 + noiseValue2 * 0.3);
+      
+      // Determine how many items to spawn in this cell
+      let itemCount = 0;
+      if (density > 0.7) {
+        itemCount = SPAWN_ITEMS_PER_CELL; // Dense cluster
+      } else if (density > 0.5) {
+        itemCount = 2; // Medium density
+      } else if (density > 0.3) {
+        itemCount = 1; // Sparse
+      }
+      
+      // Use grid position as seed for deterministic randomness
+      randomSeed(i * 1000 + j);
+      
+      // Spawn items in this grid cell
+      for (let n = 0; n < itemCount; n++) {
+        let offsetX = random(-APPLE_GRID_STEP/2.5, APPLE_GRID_STEP/2.5);
+        let offsetY = random(-APPLE_GRID_STEP/2.5, APPLE_GRID_STEP/2.5);
         
-        // Randomly choose item type
-        let typeRand = random();
-        let itemType = typeRand < 0.5 ? 'apple' : (typeRand < 0.75 ? 'banana' : 'soda');
+        // Randomly choose item type with perlin noise influence
+        let typeNoise = noise(i * 0.15 + n * 10, j * 0.15 + n * 10);
+        let itemType;
+        if (typeNoise < 0.4) {
+          itemType = 'apple';
+        } else if (typeNoise < 0.7) {
+          itemType = 'banana';
+        } else {
+          itemType = 'soda';
+        }
         
         // Randomly choose variation for banana/soda
         let variation = (itemType === 'banana' || itemType === 'soda') ? floor(random(2)) : 0;
@@ -214,7 +246,10 @@ function spawnApples(initial=false) {
           collected: false
         });
       }
-
+      
+      // Reset random seed for other game systems
+      randomSeed(millis());
+      
       appleSpawnedGrid[key] = true;
     }
   }

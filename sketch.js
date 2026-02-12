@@ -1,0 +1,375 @@
+// ==========================
+// CONFIG
+// ==========================
+let WORLD_SIZE = 4000;
+let MOVE_SPEED = 4.5;     // normal movement speed
+let ACCEL_LERP = 0.15;    // normal acceleration
+let SHOOT_COOLDOWN = 350;
+
+const FRAME_WIDTH = 48;
+const FRAME_HEIGHT = 64;
+
+const DRAW_WIDTH = 192;
+const DRAW_HEIGHT = 256;
+
+const TILE_SIZE = 64;
+const TILE_RENDER_MARGIN = TILE_SIZE * 2;
+
+const ENTITY_SIZE = 48;
+const APPLE_GRID_STEP = 160; // distance between apples
+
+const TOUCH_BTN_SIZE_RATIO = 0.12; // % of smaller screen dimension
+
+// ==========================
+// GLOBALS
+// ==========================
+let player;
+let bullets = [];
+let cameraX = 0;
+let cameraY = 0;
+
+let touchMoveDir = null;
+let lastShotTime = 0;
+let isShootLocked = false;
+
+let spriteSheets = {};
+let grassTiles = [];
+
+let entities = [];
+let collectedCount = 0;
+let appleSprite;
+let bananaSprites = [];
+let sodaSprites = [];
+
+let appleSpawnedGrid = {};
+
+let TOUCH_BTN_SIZE;
+let margin;
+
+// ==========================
+// PRELOAD
+// ==========================
+function preload() {
+  const paths = {
+    idle: {
+      down: "Sprites/idle/Idle_Down.png",
+      up: "Sprites/idle/Idle_Up.png",
+      left_down: "Sprites/idle/Idle_Left_Down.png",
+      right_down: "Sprites/idle/Idle_Right_Down.png",
+      left_up: "Sprites/idle/Idle_Left_Up.png",
+      right_up: "Sprites/idle/Idle_Right_Up.png"
+    },
+    walk: {
+      down: "Sprites/walk/walk_Down.png",
+      up: "Sprites/walk/walk_Up.png",
+      left_down: "Sprites/walk/walk_Left_Down.png",
+      right_down: "Sprites/walk/walk_Right_Down.png",
+      left_up: "Sprites/walk/walk_Left_Up.png",
+      right_up: "Sprites/walk/walk_Right_Up.png"
+    }
+  };
+
+  for (let state in paths) {
+    spriteSheets[state] = {};
+    for (let dir in paths[state]) {
+      spriteSheets[state][dir] = loadImage(paths[state][dir]);
+    }
+  }
+
+  for (let i = 1; i <= 6; i++) {
+    grassTiles.push(loadImage(`floor/grass/grass0${i}.png`));
+  }
+
+  appleSprite = loadImage("objects/apple/apple.png");
+  bananaSprites.push(loadImage("objects/banana/banana-1.png"));
+  bananaSprites.push(loadImage("objects/banana/banana-2.png"));
+  sodaSprites.push(loadImage("objects/soda/soda-1.png"));
+  sodaSprites.push(loadImage("objects/soda/soda-2.png"));
+}
+
+// ==========================
+// SETUP
+// ==========================
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  noSmooth();
+  document.body.style.overflow = "hidden";
+  document.addEventListener("touchmove", e => e.preventDefault(), { passive: false });
+
+  TOUCH_BTN_SIZE = min(width, height) * TOUCH_BTN_SIZE_RATIO;
+  margin = TOUCH_BTN_SIZE * 0.25;
+
+  player = {
+    x: width / 2,
+    y: height / 2,
+    vx: 0,
+    vy: 0,
+    size: DRAW_WIDTH,
+    lastDir: "down",
+    animFrame: 0,
+    animTimer: 0
+  };
+
+  noiseDetail(4, 0.5);
+
+  spawnApples(true); // initial spawn
+}
+
+// ==========================
+// RESIZE
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  TOUCH_BTN_SIZE = min(width, height) * TOUCH_BTN_SIZE_RATIO;
+  margin = TOUCH_BTN_SIZE * 0.25;
+}
+
+// ==========================
+// DRAW LOOP
+// ==========================
+function draw() {
+  background(25);
+
+  updateShootLock();
+  updateMovement();
+  updateCamera();
+
+  push();
+  translate(-cameraX, -cameraY);
+
+  drawGrass();
+  spawnApples(false);
+  drawEntities();
+  drawPlayer();
+  updateBullets();
+
+  pop();
+
+  drawUI();
+  drawTouchButtons();
+}
+
+// ==========================
+// GRASS
+function drawGrass() {
+  let startX = floor((cameraX - TILE_RENDER_MARGIN) / TILE_SIZE);
+  let endX   = ceil((cameraX + width + TILE_RENDER_MARGIN) / TILE_SIZE);
+  let startY = floor((cameraY - TILE_RENDER_MARGIN) / TILE_SIZE);
+  let endY   = ceil((cameraY + height + TILE_RENDER_MARGIN) / TILE_SIZE);
+
+  for (let i = startX; i <= endX; i++) {
+    for (let j = startY; j <= endY; j++) {
+      let worldX = floor(i * TILE_SIZE);
+      let worldY = floor(j * TILE_SIZE);
+
+      let n = pow(noise(i*0.15, j*0.15), 1.5);
+      let index = floor(map(n, 0, 1, 0, grassTiles.length - 1));
+      index = constrain(index, 0, grassTiles.length - 1);
+
+      imageMode(CORNER);
+      image(grassTiles[index], worldX, worldY, TILE_SIZE, TILE_SIZE);
+    }
+  }
+}
+
+// ==========================
+// APPLE SPAWNING
+function spawnApples(initial=false) {
+  let startX = floor((cameraX - TILE_RENDER_MARGIN) / APPLE_GRID_STEP);
+  let endX   = ceil((cameraX + width + TILE_RENDER_MARGIN) / APPLE_GRID_STEP);
+  let startY = floor((cameraY - TILE_RENDER_MARGIN) / APPLE_GRID_STEP);
+  let endY   = ceil((cameraY + height + TILE_RENDER_MARGIN) / APPLE_GRID_STEP);
+
+  let inView = entities.filter(e => !e.collected &&
+    e.x > cameraX && e.x < cameraX + width &&
+    e.y > cameraY && e.y < cameraY + height
+  ).length;
+
+  if (inView >= 2 && !initial) return; // max 2 visible apples
+
+  for (let i = startX; i <= endX; i++) {
+    for (let j = startY; j <= endY; j++) {
+      let key = i + "_" + j;
+      if (appleSpawnedGrid[key]) continue;
+
+      let n = pow(noise(i*0.1, j*0.1), 2);
+      let chance = random();
+
+      if (initial || (n > 0.75 && chance > 0.995)) {
+        let offsetX = random(-APPLE_GRID_STEP/4, APPLE_GRID_STEP/4);
+        let offsetY = random(-APPLE_GRID_STEP/4, APPLE_GRID_STEP/4);
+        
+        // Randomly choose item type
+        let typeRand = random();
+        let itemType = typeRand < 0.5 ? 'apple' : (typeRand < 0.75 ? 'banana' : 'soda');
+        
+        // Randomly choose variation for banana/soda
+        let variation = (itemType === 'banana' || itemType === 'soda') ? floor(random(2)) : 0;
+        
+        entities.push({
+          x: i*APPLE_GRID_STEP + APPLE_GRID_STEP/2 + offsetX,
+          y: j*APPLE_GRID_STEP + APPLE_GRID_STEP/2 + offsetY,
+          size: ENTITY_SIZE,
+          type: itemType,
+          variation: variation,
+          collected: false
+        });
+      }
+
+      appleSpawnedGrid[key] = true;
+    }
+  }
+}
+
+// ==========================
+// ENTITIES
+function drawEntities() {
+  imageMode(CENTER);
+  for (let e of entities) {
+    if (!e.collected) {
+      // Draw appropriate sprite based on type and variation
+      let sprite = appleSprite;
+      if (e.type === 'banana') sprite = bananaSprites[e.variation];
+      else if (e.type === 'soda') sprite = sodaSprites[e.variation];
+      
+      image(sprite, e.x, e.y, e.size, e.size);
+      if (dist(player.x, player.y, e.x, e.y) < (player.size/2 + e.size/2)*0.6) {
+        e.collected = true;
+        collectedCount++;
+      }
+    }
+  }
+}
+
+// ==========================
+// PLAYER
+function updateShootLock() {
+  if (isShootLocked && millis() - lastShotTime >= SHOOT_COOLDOWN) isShootLocked = false;
+}
+
+function updateMovement() {
+  if (isShootLocked) { player.vx=0; player.vy=0; return; }
+
+  let inputX = 0, inputY = 0;
+
+  if (keyIsDown(90)) inputY -= 1; // Z
+  if (keyIsDown(83)) inputY += 1; // S
+  if (keyIsDown(81)) inputX -= 1; // Q
+  if (keyIsDown(68)) inputX += 1; // D
+
+  if (touchMoveDir) {
+    inputX = touchMoveDir.x;
+    inputY = touchMoveDir.y;
+  }
+
+  let mag = sqrt(inputX*inputX + inputY*inputY);
+  if (mag>0){ inputX/=mag; inputY/=mag; }
+
+  let targetVX = inputX*MOVE_SPEED;
+  let targetVY = inputY*MOVE_SPEED;
+
+  player.vx = lerp(player.vx, targetVX, ACCEL_LERP);
+  player.vy = lerp(player.vy, targetVY, ACCEL_LERP);
+
+  player.x += player.vx;
+  player.y += player.vy;
+
+  if(mag>0) player.lastDir = getDirection(inputX,inputY);
+}
+
+const THRESH = 0.3;
+function getDirection(vx,vy){
+  if(vy>THRESH && abs(vx)<THRESH) return "down";
+  if(vy<-THRESH && abs(vx)<THRESH) return "up";
+  if(vx<-THRESH && vy>THRESH) return "left_down";
+  if(vx>THRESH && vy>THRESH) return "right_down";
+  if(vx<-THRESH && vy<-THRESH) return "left_up";
+  if(vx>THRESH && vy<-THRESH) return "right_up";
+  if(vx>THRESH && abs(vy)<THRESH) return "right_down";
+  if(vx<-THRESH && abs(vy)<THRESH) return "left_down";
+  return player.lastDir;
+}
+
+function updateCamera() { cameraX = player.x - width/2; cameraY = player.y - height/2; }
+
+function drawPlayer() {
+  let state = (abs(player.vx)>0.1||abs(player.vy)>0.1)?"walk":"idle";
+  let dir = (state==="idle")?player.lastDir:getDirection(player.vx,player.vy);
+  let img = spriteSheets[state][dir];
+  if(!img){ fill("blue"); circle(player.x,player.y,DRAW_WIDTH); return; }
+  let framesPerRow = img.width/FRAME_WIDTH;
+  playSpriteAnimation(img,player,framesPerRow,player.x,player.y,DRAW_WIDTH,DRAW_HEIGHT);
+}
+
+function playSpriteAnimation(img, entity, framesPerRow, x, y, w, h){
+  entity.animTimer++;
+  if(entity.animTimer>=6){ entity.animTimer=0; entity.animFrame++; if(entity.animFrame>=framesPerRow) entity.animFrame=0; }
+  let sx = entity.animFrame*FRAME_WIDTH, sy = 0;
+  let offsetY = h - DRAW_HEIGHT / FRAME_HEIGHT * FRAME_HEIGHT;
+  imageMode(CENTER);
+  image(img,x,y-offsetY/2,w,h,sx,sy,FRAME_WIDTH,FRAME_HEIGHT);
+}
+
+// ==========================
+// TOUCH BUTTONS (CENTERED HIGHER)
+function drawTouchButtons() {
+  fill(100,150);
+  noStroke();
+
+  // higher on the screen
+  const y0 = height - margin - TOUCH_BTN_SIZE*4;
+  const x0 = width/2 - TOUCH_BTN_SIZE*1.5;
+
+  // Up
+  rect(x0 + TOUCH_BTN_SIZE, y0, TOUCH_BTN_SIZE, TOUCH_BTN_SIZE, 10);
+  // Left
+  rect(x0, y0 + TOUCH_BTN_SIZE, TOUCH_BTN_SIZE, TOUCH_BTN_SIZE, 10);
+  // Down
+  rect(x0 + TOUCH_BTN_SIZE, y0 + TOUCH_BTN_SIZE, TOUCH_BTN_SIZE, TOUCH_BTN_SIZE, 10);
+  // Right
+  rect(x0 + TOUCH_BTN_SIZE*2, y0 + TOUCH_BTN_SIZE, TOUCH_BTN_SIZE, TOUCH_BTN_SIZE, 10);
+}
+
+function getTouchDirection(tx, ty) {
+  const y0 = height - margin - TOUCH_BTN_SIZE*4;
+  const x0 = width/2 - TOUCH_BTN_SIZE*1.5;
+
+  if (tx>x0+TOUCH_BTN_SIZE && tx<x0+TOUCH_BTN_SIZE*2 && ty>y0 && ty<y0+TOUCH_BTN_SIZE) return {x:0,y:-1};
+  if (tx>x0 && tx<x0+TOUCH_BTN_SIZE && ty>y0+TOUCH_BTN_SIZE && ty<y0+TOUCH_BTN_SIZE*2) return {x:-1,y:0};
+  if (tx>x0+TOUCH_BTN_SIZE && tx<x0+TOUCH_BTN_SIZE*2 && ty>y0+TOUCH_BTN_SIZE && ty<y0+TOUCH_BTN_SIZE*2) return {x:0,y:1};
+  if (tx>x0+TOUCH_BTN_SIZE*2 && tx<x0+TOUCH_BTN_SIZE*3 && ty>y0+TOUCH_BTN_SIZE && ty<y0+TOUCH_BTN_SIZE*2) return {x:1,y:0};
+
+  return null;
+}
+
+function touchStarted() {
+  let dir = getTouchDirection(touches[0].x, touches[0].y);
+  if(dir) touchMoveDir = dir;
+  else touchMoveDir = null;
+  return false;
+}
+
+function touchMoved() {
+  let dir = getTouchDirection(touches[0].x, touches[0].y);
+  if(dir) touchMoveDir = dir;
+  else touchMoveDir = null;
+  return false;
+}
+
+function touchEnded() {
+  touchMoveDir = null;
+  return false;
+}
+
+// ==========================
+// BULLETS
+function mousePressed(){ attemptShoot(mouseX+cameraX, mouseY+cameraY); }
+function attemptShoot(x,y){ if(isShootLocked) return; shoot(x,y); }
+function shoot(x,y){ lastShotTime=millis(); isShootLocked=true; player.vx=0; player.vy=0; let a=atan2(y-player.y,x-player.x); bullets.push({x:player.x,y:player.y,vx:cos(a)*12,vy:sin(a)*12}); }
+function updateBullets(){ fill("yellow"); for(let b of bullets){ b.x+=b.vx; b.y+=b.vy; circle(b.x,b.y,10); } }
+
+// ==========================
+// UI
+function drawUI(){
+  fill(255); noStroke(); textSize(28);
+  text(`Collected: ${collectedCount}`,10,30);
+}

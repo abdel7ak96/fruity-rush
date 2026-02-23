@@ -15,13 +15,13 @@ function drawStartMenu(screenWidth, screenHeight) {
   
   // Title
   textSize(72);
-  text("Food Collector", screenWidth / 2, screenHeight / 4);
+  text("Fruity Rush", screenWidth / 2, screenHeight / 6);
   
   textSize(32);
-  text("Choose Your Difficulty", screenWidth / 2, screenHeight / 4 + 80);
+  text("Choose Your Difficulty", screenWidth / 2, screenHeight / 4);
   
   // Draw difficulty buttons
-  let buttonWidth = 280;
+  let buttonWidth = 380;
   let buttonHeight = 100;
   let spacing = 30;
   let startY = screenHeight / 2 - 50;
@@ -68,7 +68,7 @@ function drawStartMenu(screenWidth, screenHeight) {
   // Instructions
   textSize(20);
   fill(200);
-  text("Click a button or press 1, 2, or 3 to start", screenWidth / 2, screenHeight - 60);
+  text("Click a button or press 1, 2, or 3 to start", screenWidth / 2, screenHeight - 20);
   
   textAlign(LEFT, BASELINE);
 }

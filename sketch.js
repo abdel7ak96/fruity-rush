@@ -4,7 +4,6 @@
 let WORLD_SIZE = 4000;
 let MOVE_SPEED = 4.5;     // normal movement speed
 let ACCEL_LERP = 0.15;    // normal acceleration
-let SHOOT_COOLDOWN = 350;
 
 const FRAME_WIDTH = 48;
 const FRAME_HEIGHT = 64;
@@ -26,13 +25,10 @@ const TOUCH_BTN_SIZE_RATIO = 0.12; // % of smaller screen dimension
 // GLOBALS
 // ==========================
 let player;
-let bullets = [];
 let cameraX = 0;
 let cameraY = 0;
 
 let touchMoveDir = null;
-let lastShotTime = 0;
-let isShootLocked = false;
 
 let spriteSheets = {};
 let grassTiles = [];
@@ -157,7 +153,6 @@ function draw() {
 
   // Stop gameplay when game is over
   if (!gameOver) {
-    updateShootLock();
     updateMovement();
   }
   updateCamera();
@@ -169,7 +164,6 @@ function draw() {
   spawnApples(false);
   drawEntities();
   drawPlayer();
-  updateBullets();
 
   pop();
 
@@ -309,13 +303,7 @@ function drawEntities() {
 
 // ==========================
 // PLAYER
-function updateShootLock() {
-  if (isShootLocked && millis() - lastShotTime >= SHOOT_COOLDOWN) isShootLocked = false;
-}
-
 function updateMovement() {
-  if (isShootLocked) { player.vx=0; player.vy=0; return; }
-
   let inputX = 0, inputY = 0;
 
   if (keyIsDown(90) || keyIsDown(UP_ARROW)) inputY -= 1; // Z or Up Arrow
@@ -426,13 +414,6 @@ function touchEnded() {
   touchMoveDir = null;
   return false;
 }
-
-// ==========================
-// BULLETS
-function mousePressed(){ attemptShoot(mouseX+cameraX, mouseY+cameraY); }
-function attemptShoot(x,y){ if(isShootLocked) return; shoot(x,y); }
-function shoot(x,y){ lastShotTime=millis(); isShootLocked=true; player.vx=0; player.vy=0; let a=atan2(y-player.y,x-player.x); bullets.push({x:player.x,y:player.y,vx:cos(a)*12,vy:sin(a)*12}); }
-function updateBullets(){ fill("yellow"); for(let b of bullets){ b.x+=b.vx; b.y+=b.vy; circle(b.x,b.y,10); } }
 
 // ==========================
 // UI

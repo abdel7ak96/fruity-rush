@@ -10,6 +10,30 @@
   <body>
     <main>
     </main>
-    <script src="sketch.js"></script>
+    <!-- Load modules in order: config → utils → classes → modules → main sketch -->
+    <!-- Utils -->
+    <script src="src/utils/config.js"></script>
+    <script src="src/utils/utils.js"></script>
+    
+    <!-- Core Classes -->
+    <script src="src/core/Camera.js"></script>
+    <script src="src/core/Player.js"></script>
+    <script src="src/core/EntityManager.js"></script>
+    <script src="src/core/GameState.js"></script>
+    
+    <!-- Managers -->
+    <script src="src/managers/AssetManager.js"></script>
+    
+    <!-- Rendering -->
+    <script src="src/rendering/Renderer.js"></script>
+    <script src="src/rendering/UI.js"></script>
+    <script src="src/rendering/MenuSystem.js"></script>
+    
+    <!-- Input -->
+    <script src="src/input/TouchControls.js"></script>
+    <script src="src/input/InputHandler.js"></script>
+    
+    <!-- Main Sketch -->
+    <script src="src/sketch.js"></script>
   </body>
 </html>

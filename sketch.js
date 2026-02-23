@@ -2,8 +2,14 @@
 // CONFIG
 // ==========================
 let WORLD_SIZE = 4000;
-let MOVE_SPEED = 4.5;     // normal movement speed
 let ACCEL_LERP = 0.15;    // normal acceleration
+
+// Speed system
+const MIN_SPEED = 2.5;
+const MAX_SPEED = 6.5;
+const DEFAULT_SPEED = 4.5;
+const SPEED_CHANGE_HEALTHY = 0.5;  // speed increase per healthy item
+const SPEED_CHANGE_JUNKY = 0.5;    // speed decrease per junky item
 
 const FRAME_WIDTH = 48;
 const FRAME_HEIGHT = 64;
@@ -44,6 +50,9 @@ let appleSpawnedGrid = {};
 let timerSeconds = 30;
 let lastSecondUpdate = 0;
 let gameOver = false;
+
+// Speed variables
+let currentSpeed;
 
 let TOUCH_BTN_SIZE;
 let margin;
@@ -120,6 +129,9 @@ function setup() {
   timerSeconds = 30;
   lastSecondUpdate = millis();
   gameOver = false;
+  
+  // Initialize speed
+  currentSpeed = DEFAULT_SPEED;
 
   spawnApples(true); // initial spawn
 }
@@ -292,9 +304,11 @@ function drawEntities() {
         // Update timer based on item type
         if (e.type === 'healthy') {
           timerSeconds += 5; // Healthy items add 5 seconds
+          currentSpeed = constrain(currentSpeed + SPEED_CHANGE_HEALTHY, MIN_SPEED, MAX_SPEED);
         } else {
           timerSeconds -= 5; // Junky items subtract 5 seconds
           if (timerSeconds < 0) timerSeconds = 0;
+          currentSpeed = constrain(currentSpeed - SPEED_CHANGE_JUNKY, MIN_SPEED, MAX_SPEED);
         }
       }
     }
@@ -319,8 +333,8 @@ function updateMovement() {
   let mag = sqrt(inputX*inputX + inputY*inputY);
   if (mag>0){ inputX/=mag; inputY/=mag; }
 
-  let targetVX = inputX*MOVE_SPEED;
-  let targetVY = inputY*MOVE_SPEED;
+  let targetVX = inputX*currentSpeed;
+  let targetVY = inputY*currentSpeed;
 
   player.vx = lerp(player.vx, targetVX, ACCEL_LERP);
   player.vy = lerp(player.vy, targetVY, ACCEL_LERP);
@@ -419,6 +433,58 @@ function touchEnded() {
 // UI
 function drawUI(){
   noStroke();
+  
+  // Speed indicator at top left
+  let barX = 20;
+  let barY = 20;
+  let barWidth = 180;
+  let barHeight = 24;
+  
+  // Calculate fill amount (0 to 1)
+  let speedPercent = (currentSpeed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED);
+  let fillWidth = barWidth * speedPercent;
+  
+  // Draw bar background (dark gray)
+  fill(50);
+  stroke(255);
+  strokeWeight(2);
+  rect(barX, barY, barWidth, barHeight, 4);
+  
+  // Draw three colored sections as background guides
+  noStroke();
+  // Red zone (0-33%)
+  fill(200, 50, 50, 100);
+  rect(barX, barY, barWidth / 3, barHeight, 4, 0, 0, 4);
+  // Yellow zone (33-66%)
+  fill(200, 200, 50, 100);
+  rect(barX + barWidth / 3, barY, barWidth / 3, barHeight);
+  // Green zone (66-100%)
+  fill(50, 200, 50, 100);
+  rect(barX + barWidth * 2 / 3, barY, barWidth / 3, barHeight, 0, 4, 4, 0);
+  
+  // Draw filled portion (brighter color based on current zone)
+  noStroke();
+  if (speedPercent < 0.33) {
+    fill(255, 100, 100); // Bright red
+  } else if (speedPercent < 0.66) {
+    fill(255, 255, 100); // Bright yellow
+  } else {
+    fill(100, 255, 100); // Bright green
+  }
+  rect(barX, barY, fillWidth, barHeight, 4);
+  
+  // Draw divider lines at 33% and 66%
+  stroke(255);
+  strokeWeight(1);
+  line(barX + barWidth / 3, barY, barX + barWidth / 3, barY + barHeight);
+  line(barX + barWidth * 2 / 3, barY, barX + barWidth * 2 / 3, barY + barHeight);
+  
+  // Draw speed text below bar
+  noStroke();
+  fill(255);
+  textSize(14);
+  textAlign(LEFT, TOP);
+  text(`Speed: ${nf(currentSpeed, 1, 1)}x`, barX, barY + barHeight + 6);
   
   // Timer display at top center
   let minutes = floor(timerSeconds / 60);

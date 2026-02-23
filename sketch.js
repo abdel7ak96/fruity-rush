@@ -39,9 +39,8 @@ let grassTiles = [];
 
 let entities = [];
 let collectedCount = 0;
-let appleSprite;
-let bananaSprites = [];
-let sodaSprites = [];
+let healthySprites = [];
+let junkySprites = [];
 
 let appleSpawnedGrid = {};
 
@@ -87,11 +86,13 @@ function preload() {
     grassTiles.push(loadImage(`assets/floor/grass/grass0${i}.png`));
   }
 
-  appleSprite = loadImage("assets/objects/apple/apple.png");
-  bananaSprites.push(loadImage("assets/objects/banana/banana-1.png"));
-  bananaSprites.push(loadImage("assets/objects/banana/banana-2.png"));
-  sodaSprites.push(loadImage("assets/objects/soda/soda-1.png"));
-  sodaSprites.push(loadImage("assets/objects/soda/soda-2.png"));
+  for (let i = 1; i <= 6; i++) {
+    healthySprites.push(loadImage(`assets/objects/healthy/${i}.png`));
+  }
+  
+  for (let i = 1; i <= 5; i++) {
+    junkySprites.push(loadImage(`assets/objects/junky/${i}.png`));
+  }
 }
 
 // ==========================
@@ -253,16 +254,14 @@ function spawnApples(initial=false) {
         // Randomly choose item type with perlin noise influence
         let typeNoise = noise(i * 0.15 + n * 10, j * 0.15 + n * 10);
         let itemType;
-        if (typeNoise < 0.4) {
-          itemType = 'apple';
-        } else if (typeNoise < 0.7) {
-          itemType = 'banana';
+        if (typeNoise < 0.7) {
+          itemType = 'junky';  // 70% junky
         } else {
-          itemType = 'soda';
+          itemType = 'healthy'; // 30% healthy
         }
         
-        // Randomly choose variation for banana/soda
-        let variation = (itemType === 'banana' || itemType === 'soda') ? floor(random(2)) : 0;
+        // Randomly choose variation based on type
+        let variation = (itemType === 'healthy') ? floor(random(6)) : floor(random(5));
         
         entities.push({
           x: i*APPLE_GRID_STEP + APPLE_GRID_STEP/2 + offsetX,
@@ -289,9 +288,7 @@ function drawEntities() {
   for (let e of entities) {
     if (!e.collected) {
       // Draw appropriate sprite based on type and variation
-      let sprite = appleSprite;
-      if (e.type === 'banana') sprite = bananaSprites[e.variation];
-      else if (e.type === 'soda') sprite = sodaSprites[e.variation];
+      let sprite = (e.type === 'healthy') ? healthySprites[e.variation] : junkySprites[e.variation];
       
       image(sprite, e.x, e.y, e.size, e.size);
       if (dist(player.x, player.y, e.x, e.y) < (player.size/2 + e.size/2)*0.6) {
@@ -299,10 +296,10 @@ function drawEntities() {
         collectedCount++;
         
         // Update timer based on item type
-        if (e.type === 'apple' || e.type === 'banana') {
+        if (e.type === 'healthy') {
           timerSeconds += 5; // Healthy items add 5 seconds
-        } else if (e.type === 'soda') {
-          timerSeconds -= 5; // Junk food subtracts 5 seconds
+        } else {
+          timerSeconds -= 5; // Junky items subtract 5 seconds
           if (timerSeconds < 0) timerSeconds = 0;
         }
       }

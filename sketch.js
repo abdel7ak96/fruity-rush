@@ -54,6 +54,35 @@ let gameOver = false;
 // Speed variables
 let currentSpeed;
 
+// Game state variables
+let gameStarted = false;
+let selectedDifficulty = null;
+
+// Difficulty settings
+let difficultySettings = {
+  easy: {
+    name: "Easy",
+    healthyRatio: 0.5,        // 50% healthy items
+    densityThresholds: [0.6, 0.4, 0.2],  // [dense, medium, sparse]
+    initialSpeed: 5.5,
+    description: "50% healthy, More items, Faster"
+  },
+  medium: {
+    name: "Medium",
+    healthyRatio: 0.7,        // 30% healthy items (inverse: <0.7 = junky)
+    densityThresholds: [0.7, 0.5, 0.3],
+    initialSpeed: 4.5,
+    description: "30% healthy, Normal items, Normal speed"
+  },
+  hard: {
+    name: "Hard",
+    healthyRatio: 0.8,        // 20% healthy items (inverse: <0.8 = junky)
+    densityThresholds: [0.8, 0.6, 0.4],
+    initialSpeed: 3.5,
+    description: "20% healthy, Fewer items, Slower"
+  }
+};
+
 let TOUCH_BTN_SIZE;
 let margin;
 
@@ -125,15 +154,15 @@ function setup() {
 
   noiseDetail(4, 0.5);
 
-  // Initialize timer
+  // Initialize timer (will be reset when game starts)
   timerSeconds = 30;
   lastSecondUpdate = millis();
   gameOver = false;
+  gameStarted = false;
+  selectedDifficulty = null;
   
-  // Initialize speed
-  currentSpeed = DEFAULT_SPEED;
-
-  spawnApples(true); // initial spawn
+  // Speed will be set when difficulty is chosen
+  // Don't spawn apples until game starts
 }
 
 // ==========================
@@ -149,6 +178,12 @@ function windowResized() {
 // ==========================
 function draw() {
   background(25);
+
+  // Show start menu if game hasn't started
+  if (!gameStarted) {
+    drawStartMenu();
+    return;
+  }
 
   // Update countdown timer
   if (!gameOver) {
@@ -240,12 +275,14 @@ function spawnApples(initial=false) {
       let density = (noiseValue * 0.7 + noiseValue2 * 0.3);
       
       // Determine how many items to spawn in this cell
+      // Use difficulty-specific density thresholds
       let itemCount = 0;
-      if (density > 0.7) {
+      let thresholds = difficultySettings[selectedDifficulty].densityThresholds;
+      if (density > thresholds[0]) {
         itemCount = SPAWN_ITEMS_PER_CELL; // Dense cluster
-      } else if (density > 0.5) {
+      } else if (density > thresholds[1]) {
         itemCount = 2; // Medium density
-      } else if (density > 0.3) {
+      } else if (density > thresholds[2]) {
         itemCount = 1; // Sparse
       }
       
@@ -258,12 +295,14 @@ function spawnApples(initial=false) {
         let offsetY = random(-APPLE_GRID_STEP/2.5, APPLE_GRID_STEP/2.5);
         
         // Randomly choose item type with perlin noise influence
+        // Use difficulty-specific ratio
         let typeNoise = noise(i * 0.15 + n * 10, j * 0.15 + n * 10);
         let itemType;
-        if (typeNoise < 0.7) {
-          itemType = 'junky';  // 70% junky
+        let healthyThreshold = difficultySettings[selectedDifficulty].healthyRatio;
+        if (typeNoise < healthyThreshold) {
+          itemType = 'junky';
         } else {
-          itemType = 'healthy'; // 30% healthy
+          itemType = 'healthy';
         }
         
         // Randomly choose variation based on type
@@ -525,8 +564,155 @@ function drawUI(){
     fill(255);
     textSize(32);
     text(`Final Score: ${collectedCount}`, width / 2, height / 2 + 20);
-    text("Refresh to restart", width / 2, height / 2 + 60);
+    text("Press R or click to restart", width / 2, height / 2 + 60);
     
     textAlign(LEFT, BASELINE); // Reset alignment
+  }
+}
+
+// ==========================
+// START MENU
+function drawStartMenu() {
+  background(25);
+  
+  fill(255);
+  textAlign(CENTER, CENTER);
+  
+  // Title
+  textSize(72);
+  text("Food Collector", width / 2, height / 4);
+  
+  textSize(32);
+  text("Choose Your Difficulty", width / 2, height / 4 + 80);
+  
+  // Draw difficulty buttons
+  let buttonWidth = 280;
+  let buttonHeight = 100;
+  let spacing = 30;
+  let startY = height / 2 - 50;
+  
+  let difficulties = ['easy', 'medium', 'hard'];
+  let colors = [
+    [100, 200, 100],  // Green for easy
+    [200, 200, 100],  // Yellow for medium
+    [200, 100, 100]   // Red for hard
+  ];
+  let keys = ['1', '2', '3'];
+  
+  for (let i = 0; i < difficulties.length; i++) {
+    let difficulty = difficulties[i];
+    let settings = difficultySettings[difficulty];
+    let y = startY + i * (buttonHeight + spacing);
+    let x = width / 2;
+    
+    // Check if mouse is hovering
+    let isHovering = mouseX > x - buttonWidth/2 && mouseX < x + buttonWidth/2 &&
+                     mouseY > y - buttonHeight/2 && mouseY < y + buttonHeight/2;
+    
+    // Button background
+    if (isHovering) {
+      fill(colors[i][0], colors[i][1], colors[i][2], 200);
+    } else {
+      fill(colors[i][0], colors[i][1], colors[i][2], 120);
+    }
+    stroke(255);
+    strokeWeight(3);
+    rect(x - buttonWidth/2, y - buttonHeight/2, buttonWidth, buttonHeight, 10);
+    
+    // Button text
+    noStroke();
+    fill(255);
+    textSize(36);
+    text(settings.name, x, y - 20);
+    
+    textSize(16);
+    text(settings.description, x, y + 15);
+    text(`Press ${keys[i]}`, x, y + 35);
+  }
+  
+  // Instructions
+  textSize(20);
+  fill(200);
+  text("Click a button or press 1, 2, or 3 to start", width / 2, height - 60);
+  
+  textAlign(LEFT, BASELINE);
+}
+
+// ==========================
+// GAME STATE MANAGEMENT
+function startGame(difficulty) {
+  selectedDifficulty = difficulty;
+  gameStarted = true;
+  gameOver = false;
+  
+  // Reset game state
+  collectedCount = 0;
+  entities = [];
+  appleSpawnedGrid = {};
+  
+  // Apply difficulty settings
+  currentSpeed = difficultySettings[difficulty].initialSpeed;
+  
+  // Reset timer
+  timerSeconds = 30;
+  lastSecondUpdate = millis();
+  
+  // Initialize player position
+  player.x = width / 2;
+  player.y = height / 2;
+  player.vx = 0;
+  player.vy = 0;
+  
+  // Spawn initial items
+  spawnApples(true);
+}
+
+function restartGame() {
+  gameStarted = false;
+  gameOver = false;
+  selectedDifficulty = null;
+  touchMoveDir = null;
+}
+
+// ==========================
+// INPUT HANDLERS
+function keyPressed() {
+  // Menu selection
+  if (!gameStarted && !gameOver) {
+    if (key === '1') startGame('easy');
+    else if (key === '2') startGame('medium');
+    else if (key === '3') startGame('hard');
+  }
+  
+  // Restart
+  if (gameOver && (key === 'r' || key === 'R')) {
+    restartGame();
+  }
+}
+
+function mousePressed() {
+  // Restart from game over
+  if (gameOver) {
+    restartGame();
+    return;
+  }
+  
+  // Menu button clicks
+  if (!gameStarted) {
+    let buttonWidth = 280;
+    let buttonHeight = 100;
+    let spacing = 30;
+    let startY = height / 2 - 50;
+    let x = width / 2;
+    
+    let difficulties = ['easy', 'medium', 'hard'];
+    for (let i = 0; i < difficulties.length; i++) {
+      let y = startY + i * (buttonHeight + spacing);
+      if (mouseX > x - buttonWidth/2 && mouseX < x + buttonWidth/2 &&
+          mouseY > y - buttonHeight/2 && mouseY < y + buttonHeight/2) {
+        startGame(difficulties[i]);
+        return;
+      }
+    }
   }
 }

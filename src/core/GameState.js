@@ -4,6 +4,7 @@
 
 class GameState {
   constructor() {
+    this.showWelcome = true;
     this.started = false;
     this.gameOver = false;
     this.selectedDifficulty = null;
@@ -32,9 +33,17 @@ class GameState {
   }
   
   /**
-   * Restart game (return to menu)
+   * Dismiss the welcome screen and show the menu
+   */
+  dismissWelcome() {
+    this.showWelcome = false;
+  }
+  
+  /**
+   * Restart game (return to menu, skip welcome screen)
    */
   restartGame() {
+    this.showWelcome = false;  // Skip welcome on restart
     this.started = false;
     this.gameOver = false;
     this.selectedDifficulty = null;

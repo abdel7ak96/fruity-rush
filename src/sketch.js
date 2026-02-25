@@ -19,6 +19,7 @@ let touchMargin;
 
 let currentVolume = 0.5;
 let wasGameOver = false;
+let welcomeScrollOffset = 0;
 
 // ==========================
 // PRELOAD
@@ -66,6 +67,12 @@ function windowResized() {
 // ==========================
 function draw() {
   background(25);
+
+  // Show welcome screen first
+  if (gameState.showWelcome) {
+    drawWelcomeScreen(width, height);
+    return;
+  }
 
   // Show start menu if game hasn't started
   if (!gameState.started) {
@@ -147,6 +154,13 @@ function handlePlayerMovement() {
  * Handle key presses for menu selection and restart
  */
 function keyPressed() {
+  // Dismiss welcome screen
+  if (gameState.showWelcome && (key === ' ' || keyCode === ENTER)) {
+    gameState.dismissWelcome();
+    welcomeScrollOffset = 0;
+    return;
+  }
+  
   // Menu selection
   if (!gameState.started && !gameState.gameOver) {
     let difficulty = handleMenuKeyPress();
@@ -170,6 +184,13 @@ function mousePressed() {
   if (newVolume !== null) {
     currentVolume = newVolume;
     outputVolume(currentVolume);
+    return;
+  }
+  
+  // Dismiss welcome screen
+  if (gameState.showWelcome) {
+    gameState.dismissWelcome();
+    welcomeScrollOffset = 0;
     return;
   }
   
@@ -212,6 +233,12 @@ function touchStarted() {
     return false;
   }
   
+  // Store initial touch position for scrolling on welcome screen
+  if (gameState.showWelcome) {
+    window.lastTouchY = touches[0].y;
+    return false;
+  }
+  
   let dir = getTouchDirection(touches[0].x, touches[0].y, width, height, touchBtnSize, touchMargin);
   touchMoveDir = dir;
   return false;
@@ -229,6 +256,14 @@ function touchMoved() {
     return false;
   }
   
+  // Handle scrolling on welcome screen
+  if (gameState.showWelcome && window.lastTouchY !== undefined) {
+    let deltaY = touches[0].y - window.lastTouchY;
+    welcomeScrollOffset += deltaY;
+    window.lastTouchY = touches[0].y;
+    return false;
+  }
+  
   let dir = getTouchDirection(touches[0].x, touches[0].y, width, height, touchBtnSize, touchMargin);
   touchMoveDir = dir;
   return false;
@@ -238,8 +273,33 @@ function touchMoved() {
  * Handle touch end
  */
 function touchEnded() {
+  // Handle tap to dismiss welcome screen (only if no scroll occurred)
+  if (gameState.showWelcome) {
+    if (window.lastTouchY !== undefined) {
+      // Check if this was a tap (minimal movement) not a scroll
+      let touchStart = window.lastTouchY;
+      let touchEnd = touches[0] ? touches[0].y : touchStart;
+      if (abs(touchEnd - touchStart) < 10) {
+        gameState.dismissWelcome();
+        welcomeScrollOffset = 0;
+      }
+      window.lastTouchY = undefined;
+    }
+    return false;
+  }
+  
   touchMoveDir = null;
   return false;
+}
+
+/**
+ * Handle mouse wheel scrolling on welcome screen
+ */
+function mouseWheel(event) {
+  if (gameState.showWelcome) {
+    welcomeScrollOffset -= event.delta * 0.5;
+    return false; // Prevent page scrolling
+  }
 }
 
 // ==========================

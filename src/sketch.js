@@ -21,6 +21,12 @@ let currentVolume = 0.5;
 let wasGameOver = false;
 let welcomeScrollOffset = 0;
 
+// Volume slider dimensions (calculated responsively)
+let volumeSliderX;
+let volumeSliderY;
+let volumeSliderW;
+let volumeSliderH;
+
 // ==========================
 // PRELOAD
 // ==========================
@@ -41,6 +47,12 @@ function setup() {
   touchBtnSize = min(width, height) * TOUCH_BTN_SIZE_RATIO;
   touchMargin = touchBtnSize * 0.25;
 
+  // Calculate responsive volume slider dimensions
+  volumeSliderW = min(width * 0.15, 120);
+  volumeSliderH = min(height * 0.025, 20);
+  volumeSliderX = width - volumeSliderW - min(width * 0.025, 20);
+  volumeSliderY = min(height * 0.025, 20);
+
   // Initialize game systems
   gameState = new GameState();
   player = new Player(width / 2, height / 2);
@@ -60,6 +72,12 @@ function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   touchBtnSize = min(width, height) * TOUCH_BTN_SIZE_RATIO;
   touchMargin = touchBtnSize * 0.25;
+  
+  // Recalculate responsive volume slider dimensions
+  volumeSliderW = min(width * 0.15, 120);
+  volumeSliderH = min(height * 0.025, 20);
+  volumeSliderX = width - volumeSliderW - min(width * 0.025, 20);
+  volumeSliderY = min(height * 0.025, 20);
 }
 
 // ==========================
@@ -127,7 +145,7 @@ function draw() {
   drawTouchButtons(width, height, touchBtnSize, touchMargin);
   
   // Draw volume slider (always visible)
-  drawVolumeSlider(width - 140, 20, 120, 20, currentVolume);
+  drawVolumeSlider(volumeSliderX, volumeSliderY, volumeSliderW, volumeSliderH, currentVolume);
 }
 
 // ==========================
@@ -180,7 +198,7 @@ function keyPressed() {
  */
 function mousePressed() {
   // Check volume slider interaction first
-  let newVolume = checkVolumeSliderInteraction(mouseX, mouseY, width - 140, 20, 120, 20);
+  let newVolume = checkVolumeSliderInteraction(mouseX, mouseY, volumeSliderX, volumeSliderY, volumeSliderW, volumeSliderH);
   if (newVolume !== null) {
     currentVolume = newVolume;
     outputVolume(currentVolume);
@@ -213,7 +231,7 @@ function mousePressed() {
  * Handle mouse dragging for smooth volume adjustment
  */
 function mouseDragged() {
-  let newVolume = checkVolumeSliderInteraction(mouseX, mouseY, width - 140, 20, 120, 20);
+  let newVolume = checkVolumeSliderInteraction(mouseX, mouseY, volumeSliderX, volumeSliderY, volumeSliderW, volumeSliderH);
   if (newVolume !== null) {
     currentVolume = newVolume;
     outputVolume(currentVolume);
@@ -226,7 +244,7 @@ function mouseDragged() {
  */
 function touchStarted() {
   // Check volume slider interaction first
-  let newVolume = checkVolumeSliderInteraction(touches[0].x, touches[0].y, width - 140, 20, 120, 20);
+  let newVolume = checkVolumeSliderInteraction(touches[0].x, touches[0].y, volumeSliderX, volumeSliderY, volumeSliderW, volumeSliderH);
   if (newVolume !== null) {
     currentVolume = newVolume;
     outputVolume(currentVolume);
@@ -256,7 +274,7 @@ function touchStarted() {
  */
 function touchMoved() {
   // Check volume slider interaction first
-  let newVolume = checkVolumeSliderInteraction(touches[0].x, touches[0].y, width - 140, 20, 120, 20);
+  let newVolume = checkVolumeSliderInteraction(touches[0].x, touches[0].y, volumeSliderX, volumeSliderY, volumeSliderW, volumeSliderH);
   if (newVolume !== null) {
     currentVolume = newVolume;
     outputVolume(currentVolume);

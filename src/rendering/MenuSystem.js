@@ -161,20 +161,28 @@ function drawWelcomeScreen(screenWidth, screenHeight) {
 function drawStartMenu(screenWidth, screenHeight) {
   background(25);
   
+  // Responsive sizing
+  let isMobile = screenWidth < 600;
+  let titleSize = isMobile ? min(screenWidth * 0.12, 50) : 72;
+  let subtitleSize = isMobile ? min(screenWidth * 0.06, 24) : 32;
+  let buttonTextSize = isMobile ? min(screenWidth * 0.055, 28) : 36;
+  let buttonDescSize = isMobile ? min(screenWidth * 0.028, 14) : 16;
+  let instructionSize = isMobile ? min(screenWidth * 0.035, 18) : 20;
+  
   fill(255);
   textAlign(CENTER, CENTER);
   
   // Title
-  textSize(72);
+  textSize(titleSize);
   text("Fruity Rush", screenWidth / 2, screenHeight / 6);
   
-  textSize(32);
+  textSize(subtitleSize);
   text("Choose Your Difficulty", screenWidth / 2, screenHeight / 4);
   
-  // Draw difficulty buttons
-  let buttonWidth = 380;
-  let buttonHeight = 100;
-  let spacing = 30;
+  // Draw difficulty buttons with responsive sizing
+  let buttonWidth = min(screenWidth * 0.85, 380);
+  let buttonHeight = min(screenHeight * 0.12, 100);
+  let spacing = isMobile ? 20 : 30;
   let startY = screenHeight / 2 - 50;
   
   let difficulties = ['easy', 'medium', 'hard'];
@@ -208,18 +216,18 @@ function drawStartMenu(screenWidth, screenHeight) {
     // Button text
     noStroke();
     fill(255);
-    textSize(36);
-    text(settings.name, x, y - 20);
+    textSize(buttonTextSize);
+    text(settings.name, x, y - buttonHeight * 0.15);
     
-    textSize(16);
-    text(settings.description, x, y + 15);
-    text(`Press ${keys[i]}`, x, y + 35);
+    textSize(buttonDescSize);
+    text(settings.description, x, y + buttonHeight * 0.1);
+    text(`Press ${keys[i]}`, x, y + buttonHeight * 0.3);
   }
   
   // Instructions
-  textSize(20);
+  textSize(instructionSize);
   fill(200);
-  text("Click a button or press 1, 2, or 3 to start", screenWidth / 2, screenHeight - 20);
+  text("Click a button or press 1, 2, or 3 to start", screenWidth / 2, screenHeight - (isMobile ? 40 : 20));
   
   textAlign(LEFT, BASELINE);
 }
@@ -233,9 +241,11 @@ function drawStartMenu(screenWidth, screenHeight) {
  * @returns {string|null} Difficulty level or null
  */
 function checkMenuButtonClick(mouseX, mouseY, screenWidth, screenHeight) {
-  let buttonWidth = 380;
-  let buttonHeight = 100;
-  let spacing = 30;
+  // Use same responsive sizing as drawStartMenu
+  let isMobile = screenWidth < 600;
+  let buttonWidth = min(screenWidth * 0.85, 380);
+  let buttonHeight = min(screenHeight * 0.12, 100);
+  let spacing = isMobile ? 20 : 30;
   let startY = screenHeight / 2 - 50;
   let x = screenWidth / 2;
   

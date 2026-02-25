@@ -7,10 +7,12 @@
  * @param {number} currentSpeed - Current speed value
  */
 function drawSpeedBar(currentSpeed) {
-  let barX = 20;
-  let barY = 20;
-  let barWidth = 180;
-  let barHeight = 24;
+  // Responsive sizing
+  let barWidth = min(width * 0.25, 180);
+  let barHeight = min(height * 0.03, 24);
+  let barX = min(width * 0.025, 20);
+  let barY = min(height * 0.025, 20);
+  let textSize_speed = min(width * 0.02, 14);
   
   // Calculate fill amount (0 to 1)
   let speedPercent = (currentSpeed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED);
@@ -54,7 +56,7 @@ function drawSpeedBar(currentSpeed) {
   // Draw speed text below bar
   noStroke();
   fill(255);
-  textSize(14);
+  textSize(textSize_speed);
   textAlign(LEFT, TOP);
   text(`Speed: ${nf(currentSpeed, 1, 1)}x`, barX, barY + barHeight + 6);
 }
@@ -70,6 +72,9 @@ function drawTimer(seconds, x, y) {
   let secs = seconds % 60;
   let timeText = `${nf(minutes, 2)}:${nf(secs, 2)}`;
   
+  // Responsive sizing
+  let timerSize = min(width * 0.08, height * 0.08, 64);
+  
   textAlign(CENTER, TOP);
   
   // Urgency effect when timer <= 15 seconds
@@ -77,11 +82,11 @@ function drawTimer(seconds, x, y) {
     // Red color for urgency
     fill(255, 0, 0);
     // Pulsing effect using sine wave
-    let pulse = sin(millis() * 0.005) * 8; // oscillates between -8 and +8
-    textSize(64 + pulse);
+    let pulse = sin(millis() * 0.005) * (timerSize * 0.125); // Scale pulse with size
+    textSize(timerSize + pulse);
   } else {
     fill(255);
-    textSize(64);
+    textSize(timerSize);
   }
   
   text(timeText, x, y);
@@ -94,8 +99,11 @@ function drawTimer(seconds, x, y) {
  * @param {number} y - Y position
  */
 function drawScore(score, x, y) {
+  // Responsive sizing
+  let scoreSize = min(width * 0.04, height * 0.04, 32);
+  
   fill(255);
-  textSize(32);
+  textSize(scoreSize);
   textAlign(CENTER, TOP);
   text(`Score: ${score}`, x, y);
 }
@@ -107,15 +115,19 @@ function drawScore(score, x, y) {
  * @param {number} screenHeight - Screen height
  */
 function drawGameOver(score, screenWidth, screenHeight) {
+  // Responsive sizing
+  let titleSize = min(screenWidth * 0.1, screenHeight * 0.08, 64);
+  let textSize_gameOver = min(screenWidth * 0.05, screenHeight * 0.04, 32);
+  
   fill(255, 0, 0);
-  textSize(64);
+  textSize(titleSize);
   textAlign(CENTER, CENTER);
-  text("TIME'S UP!", screenWidth / 2, screenHeight / 2 - 50);
+  text("TIME'S UP!", screenWidth / 2, screenHeight / 2 - titleSize * 0.8);
   
   fill(255);
-  textSize(32);
-  text(`Final Score: ${score}`, screenWidth / 2, screenHeight / 2 + 20);
-  text("Press R or click to restart", screenWidth / 2, screenHeight / 2 + 60);
+  textSize(textSize_gameOver);
+  text(`Final Score: ${score}`, screenWidth / 2, screenHeight / 2 + textSize_gameOver * 0.6);
+  text("Press R or click to restart", screenWidth / 2, screenHeight / 2 + textSize_gameOver * 1.9);
 }
 
 /**
@@ -127,6 +139,7 @@ function drawGameOver(score, screenWidth, screenHeight) {
  * @param {number} volume - Current volume (0.0 to 1.0)
  */
 function drawVolumeSlider(x, y, w, h, volume) {
+  // Responsive sizing already handled by caller in sketch.js
   // Check if mouse is hovering over slider
   let isHovering = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
   
@@ -146,9 +159,9 @@ function drawVolumeSlider(x, y, w, h, volume) {
   }
   rect(x, y, fillWidth, h, 4);
   
-  // Draw volume icon/label
+  // Draw volume icon/label (scale with slider height)
   fill(255);
-  textSize(12);
+  textSize(max(h * 0.6, 10));
   textAlign(LEFT, TOP);
   noStroke();
   text("🔊", x, y + h + 4);

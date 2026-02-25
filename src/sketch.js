@@ -17,6 +17,9 @@ let touchMoveDir = null;
 let touchBtnSize;
 let touchMargin;
 
+let currentVolume = 0.5;
+let wasGameOver = false;
+
 // ==========================
 // PRELOAD
 // ==========================
@@ -44,6 +47,9 @@ function setup() {
   entityManager = new EntityManager();
 
   noiseDetail(4, 0.5);
+  
+  // Set initial master volume
+  outputVolume(currentVolume);
 }
 
 // ==========================
@@ -67,8 +73,15 @@ function draw() {
     return;
   }
 
-  // Update countdown timer
+  // Update countdown timer and check for game over
   gameState.updateTimer();
+  
+  // Check if game just ended
+  if (gameState.gameOver && !wasGameOver) {
+    assetManager.sounds.gameOver.play();
+    assetManager.sounds.background.stop();
+    wasGameOver = true;
+  }
 
   // Gameplay updates (stop when game is over)
   if (!gameState.gameOver) {
@@ -88,6 +101,12 @@ function draw() {
   let collected = entityManager.checkCollisions(player);
   for (let item of collected) {
     gameState.collectItem(item.type);
+    // Play collection sound based on item type
+    if (item.type === 'healthy') {
+      assetManager.sounds.healthy.play();
+    } else if (item.type === 'junky') {
+      assetManager.sounds.junky.play();
+    }
   }
   
   entityManager.cleanup(player);
@@ -99,6 +118,9 @@ function draw() {
   // Render UI (no camera transform)
   drawUI(gameState, width, height);
   drawTouchButtons(width, height, touchBtnSize, touchMargin);
+  
+  // Draw volume slider (always visible)
+  drawVolumeSlider(width - 140, 20, 120, 20, currentVolume);
 }
 
 // ==========================
@@ -143,6 +165,14 @@ function keyPressed() {
  * Handle mouse clicks for menu and restart
  */
 function mousePressed() {
+  // Check volume slider interaction first
+  let newVolume = checkVolumeSliderInteraction(mouseX, mouseY, width - 140, 20, 120, 20);
+  if (newVolume !== null) {
+    currentVolume = newVolume;
+    outputVolume(currentVolume);
+    return;
+  }
+  
   // Restart from game over
   if (gameState.gameOver) {
     restartGame();
@@ -159,9 +189,29 @@ function mousePressed() {
 }
 
 /**
+ * Handle mouse dragging for smooth volume adjustment
+ */
+function mouseDragged() {
+  let newVolume = checkVolumeSliderInteraction(mouseX, mouseY, width - 140, 20, 120, 20);
+  if (newVolume !== null) {
+    currentVolume = newVolume;
+    outputVolume(currentVolume);
+    return false;
+  }
+}
+
+/**
  * Handle touch start
  */
 function touchStarted() {
+  // Check volume slider interaction first
+  let newVolume = checkVolumeSliderInteraction(touches[0].x, touches[0].y, width - 140, 20, 120, 20);
+  if (newVolume !== null) {
+    currentVolume = newVolume;
+    outputVolume(currentVolume);
+    return false;
+  }
+  
   let dir = getTouchDirection(touches[0].x, touches[0].y, width, height, touchBtnSize, touchMargin);
   touchMoveDir = dir;
   return false;
@@ -171,6 +221,14 @@ function touchStarted() {
  * Handle touch move
  */
 function touchMoved() {
+  // Check volume slider interaction first
+  let newVolume = checkVolumeSliderInteraction(touches[0].x, touches[0].y, width - 140, 20, 120, 20);
+  if (newVolume !== null) {
+    currentVolume = newVolume;
+    outputVolume(currentVolume);
+    return false;
+  }
+  
   let dir = getTouchDirection(touches[0].x, touches[0].y, width, height, touchBtnSize, touchMargin);
   touchMoveDir = dir;
   return false;
@@ -195,6 +253,11 @@ function startGame(difficulty) {
   gameState.startGame(difficulty);
   entityManager.reset();
   player.reset(width / 2, height / 2);
+  wasGameOver = false;
+  
+  // Play game start sound and start background music
+  assetManager.sounds.gameStart.play();
+  assetManager.sounds.background.loop();
   
   // Spawn initial entities
   entityManager.spawnInViewport(camera, width, height, difficulty);
@@ -207,4 +270,8 @@ function restartGame() {
   gameState.restartGame();
   entityManager.reset();
   touchMoveDir = null;
+  wasGameOver = false;
+  
+  // Stop background music
+  assetManager.sounds.background.stop();
 }

@@ -119,6 +119,62 @@ function drawGameOver(score, screenWidth, screenHeight) {
 }
 
 /**
+ * Draw the volume slider
+ * @param {number} x - X position (top-left corner)
+ * @param {number} y - Y position (top-left corner)
+ * @param {number} w - Width of slider
+ * @param {number} h - Height of slider
+ * @param {number} volume - Current volume (0.0 to 1.0)
+ */
+function drawVolumeSlider(x, y, w, h, volume) {
+  // Check if mouse is hovering over slider
+  let isHovering = mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
+  
+  // Draw background bar
+  fill(50);
+  stroke(255);
+  strokeWeight(2);
+  rect(x, y, w, h, 4);
+  
+  // Draw filled portion (volume indicator)
+  let fillWidth = w * volume;
+  noStroke();
+  if (isHovering) {
+    fill(100, 150, 255); // Blue highlight on hover
+  } else {
+    fill(100, 200, 100); // Green fill
+  }
+  rect(x, y, fillWidth, h, 4);
+  
+  // Draw volume icon/label
+  fill(255);
+  textSize(12);
+  textAlign(LEFT, TOP);
+  noStroke();
+  text("🔊", x, y + h + 4);
+}
+
+/**
+ * Check if mouse/touch is interacting with volume slider
+ * @param {number} mx - Mouse/touch X coordinate
+ * @param {number} my - Mouse/touch Y coordinate
+ * @param {number} sliderX - Slider X position
+ * @param {number} sliderY - Slider Y position
+ * @param {number} sliderW - Slider width
+ * @param {number} sliderH - Slider height
+ * @returns {number|null} Volume value (0.0-1.0) or null if outside slider
+ */
+function checkVolumeSliderInteraction(mx, my, sliderX, sliderY, sliderW, sliderH) {
+  // Check if coordinates are within slider bounds
+  if (mx >= sliderX && mx <= sliderX + sliderW && my >= sliderY && my <= sliderY + sliderH) {
+    // Calculate volume based on X position
+    let volume = (mx - sliderX) / sliderW;
+    return constrain(volume, 0.0, 1.0);
+  }
+  return null;
+}
+
+/**
  * Draw all UI elements
  * @param {GameState} gameState - Game state object
  * @param {number} screenWidth - Screen width

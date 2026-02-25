@@ -8,6 +8,7 @@ class AssetManager {
     this.grassTiles = [];
     this.healthySprites = [];
     this.junkySprites = [];
+    this.sounds = {};
   }
   
   /**
@@ -56,5 +57,12 @@ class AssetManager {
     for (let i = 1; i <= 5; i++) {
       this.junkySprites.push(loadImage(`assets/objects/junky/${i}.png`));
     }
+    
+    // Load audio files
+    this.sounds.background = loadSound('assets/audio/background.mp3');
+    this.sounds.gameStart = loadSound('assets/audio/game-start.mp3');
+    this.sounds.gameOver = loadSound('assets/audio/game-over.mp3');
+    this.sounds.healthy = loadSound('assets/audio/healthy.mp3');
+    this.sounds.junky = loadSound('assets/audio/junky.mp3');
   }
 }

@@ -233,7 +233,7 @@ function drawStartMenu(screenWidth, screenHeight) {
  * @returns {string|null} Difficulty level or null
  */
 function checkMenuButtonClick(mouseX, mouseY, screenWidth, screenHeight) {
-  let buttonWidth = 280;
+  let buttonWidth = 380;
   let buttonHeight = 100;
   let spacing = 30;
   let startY = screenHeight / 2 - 50;

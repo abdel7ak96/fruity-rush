@@ -239,6 +239,13 @@ function touchStarted() {
     return false;
   }
   
+  // Store touch start position for menu buttons
+  if (!gameState.started && !gameState.gameOver) {
+    window.touchStartX = touches[0].x;
+    window.touchStartY = touches[0].y;
+    return false;
+  }
+  
   let dir = getTouchDirection(touches[0].x, touches[0].y, width, height, touchBtnSize, touchMargin);
   touchMoveDir = dir;
   return false;
@@ -278,13 +285,41 @@ function touchEnded() {
     if (window.lastTouchY !== undefined) {
       // Check if this was a tap (minimal movement) not a scroll
       let touchStart = window.lastTouchY;
-      let touchEnd = touches[0] ? touches[0].y : touchStart;
+      let touchEnd = touches.length > 0 ? touches[0].y : touchStart;
       if (abs(touchEnd - touchStart) < 10) {
         gameState.dismissWelcome();
         welcomeScrollOffset = 0;
       }
       window.lastTouchY = undefined;
     }
+    return false;
+  }
+  
+  // Handle touch clicks on menu buttons
+  if (!gameState.started && !gameState.gameOver) {
+    if (window.touchStartX !== undefined && window.touchStartY !== undefined) {
+      // Get the touch end position
+      let touchEndX = touches.length > 0 ? touches[0].x : window.touchStartX;
+      let touchEndY = touches.length > 0 ? touches[0].y : window.touchStartY;
+      
+      // Check if this was a tap (minimal movement) not a drag
+      if (abs(touchEndX - window.touchStartX) < 20 && abs(touchEndY - window.touchStartY) < 20) {
+        // Use the original touch position to check button click
+        let difficulty = checkMenuButtonClick(window.touchStartX, window.touchStartY, width, height);
+        if (difficulty) {
+          startGame(difficulty);
+        }
+      }
+      
+      window.touchStartX = undefined;
+      window.touchStartY = undefined;
+    }
+    return false;
+  }
+  
+  // Handle restart from game over screen
+  if (gameState.gameOver) {
+    restartGame();
     return false;
   }
   

@@ -13,7 +13,7 @@ let player;
 let camera;
 let entityManager;
 
-let touchMoveDir = null;
+let touchActiveDirs = [];
 let touchBtnSize;
 let touchMargin;
 
@@ -155,10 +155,10 @@ function handlePlayerMovement() {
   // Get keyboard input
   let input = getMovementInput();
   
-  // Override with touch input if active
-  if (touchMoveDir) {
-    input.x = touchMoveDir.x;
-    input.y = touchMoveDir.y;
+  // Accumulate all active touch directions
+  for (let dir of touchActiveDirs) {
+    input.x += dir.x;
+    input.y += dir.y;
   }
   
   player.update(input.x, input.y, gameState.currentSpeed);
@@ -264,8 +264,14 @@ function touchStarted() {
     return false;
   }
   
-  let dir = getTouchDirection(touches[0].x, touches[0].y, width, height, touchBtnSize, touchMargin);
-  touchMoveDir = dir;
+  // Check all active touches for directional buttons (enables multi-touch diagonal movement)
+  touchActiveDirs = [];
+  for (let i = 0; i < touches.length; i++) {
+    let dir = getTouchDirection(touches[i].x, touches[i].y, width, height, touchBtnSize, touchMargin);
+    if (dir) {
+      touchActiveDirs.push(dir);
+    }
+  }
   return false;
 }
 
@@ -289,8 +295,14 @@ function touchMoved() {
     return false;
   }
   
-  let dir = getTouchDirection(touches[0].x, touches[0].y, width, height, touchBtnSize, touchMargin);
-  touchMoveDir = dir;
+  // Rebuild active touch directions (handles fingers moving between buttons)
+  touchActiveDirs = [];
+  for (let i = 0; i < touches.length; i++) {
+    let dir = getTouchDirection(touches[i].x, touches[i].y, width, height, touchBtnSize, touchMargin);
+    if (dir) {
+      touchActiveDirs.push(dir);
+    }
+  }
   return false;
 }
 
@@ -341,7 +353,14 @@ function touchEnded() {
     return false;
   }
   
-  touchMoveDir = null;
+  // Rebuild active touch directions from remaining touches
+  touchActiveDirs = [];
+  for (let i = 0; i < touches.length; i++) {
+    let dir = getTouchDirection(touches[i].x, touches[i].y, width, height, touchBtnSize, touchMargin);
+    if (dir) {
+      touchActiveDirs.push(dir);
+    }
+  }
   return false;
 }
 
@@ -382,7 +401,7 @@ function startGame(difficulty) {
 function restartGame() {
   gameState.restartGame();
   entityManager.reset();
-  touchMoveDir = null;
+  touchActiveDirs = [];
   wasGameOver = false;
   
   // Stop background music
